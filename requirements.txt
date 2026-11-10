@@ -2,7 +2,6 @@ streamlit
 requests
 websockets>=13
 pymysql
-anthropic
 plotly
 pandas
 python-dotenv

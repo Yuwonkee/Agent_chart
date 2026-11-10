@@ -1,9 +1,10 @@
-"""네이버 뉴스 검색(최대 5건) + Claude 동향/전망 분석."""
+"""네이버 뉴스 검색(최대 5건) + Claude(구독, Claude Code CLI) 동향/전망 분석."""
 import html
 import os
 import re
+import shutil
+import subprocess
 
-import anthropic
 import requests
 
 
@@ -37,15 +38,15 @@ def analyze(name, chart, news):
         "[최근 동향] 2~3줄\n[향후 전망] 2~3줄 (긍정/부정 요인 포함)\n"
         "투자 권유가 아닌 참고용 분석임을 전제로 한다."
     )
-    client = anthropic.Anthropic()
-    resp = client.beta.messages.create(
-        model=os.getenv("CLAUDE_MODEL", "claude-opus-5-5"),
-        max_tokens=2000,
-        output_config={"effort": "low"},  # 짧은 요약 작업 → 토큰 최소화
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",  # 안전 필터 거절 시 서버가 다른 모델로 재시도
-        messages=[{"role": "user", "content": prompt}],
-    )
-    if resp.stop_reason == "refusal":
-        return "분석 불가 (모델 응답 거절)"
-    return "".join(b.text for b in resp.content if b.type == "text").strip()
+    # Claude 구독(Claude Code CLI) 호출: claude -p, 프롬프트는 표준입력으로 전달
+    exe = shutil.which("claude")
+    if not exe:
+        raise RuntimeError("Claude Code 미설치: 'claude' 명령을 찾을 수 없음")
+    cmd = [exe, "-p"]
+    if os.getenv("CLAUDE_MODEL"):
+        cmd += ["--model", os.environ["CLAUDE_MODEL"]]
+    r = subprocess.run(cmd, input=prompt, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace", timeout=180)
+    if r.returncode != 0:
+        raise RuntimeError(f"claude 실행 실패: {(r.stderr or r.stdout).strip()[:200]}")
+    return r.stdout.strip()

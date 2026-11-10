@@ -8,7 +8,7 @@
 | 단계 | 내용 | 파일 |
 |---|---|---|
 | 1 | 키움 토큰 발급 → 조건식 목록(ka10171) → 조건검색(ka10172) → 종목별 일봉(ka10081) | `kiwoom.py` |
-| 2 | 종목명으로 네이버 뉴스 최신 5건 수집 → Claude로 최근 동향·향후 전망 분석 | `news_ai.py` |
+| 2 | 종목명으로 네이버 뉴스 최신 5건 수집 → Claude 구독(`claude -p`)으로 최근 동향·향후 전망 분석 | `news_ai.py` |
 | 3 | 차트/이슈/분석을 날짜 key로 저장 (같은 날짜 재조회 시 덮어씀) | `db.py` |
 | 4 | DB에서 날짜로 조회 → 종목별 표시 | `app.py` |
 
@@ -27,14 +27,19 @@
 | `stock_issue` | 날짜, 종목번호, 링크주소, 내용 |
 | `stock_analysis` | 날짜, 종목번호, 분석내용 |
 
-## 실행
-```bash
+## 실행 (Windows, 64비트 Python)
+```powershell
+# 최초 1회: Claude Code 설치 후 `claude` 실행 → 구독 계정 로그인
+irm https://claude.ai/install.ps1 | iex
+
+py -3 -m venv .venv; .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-cp .env.example .env        # 키움/네이버/Claude 키, 조건식 이름, DB 정보 입력
-mysql -u root -p < schema.sql
+copy .env.example .env      # 키움/네이버 키, 조건식 이름, DB 정보 입력
+mysql -u root -p -e "source schema.sql"
 streamlit run app.py
 ```
 
 ## 참고
 - 조건식은 영웅문(HTS)에서 미리 저장하고, 그 이름을 `.env`의 `CONDITION_NAME`에 입력
+- 분석은 Claude 구독 사용량에서 차감됨 (종목당 1회 호출)
 - 분석은 참고용이며 투자 권유가 아님
